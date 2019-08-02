@@ -15,6 +15,7 @@ Please enter below inputs:
 
 # Sample Input/output
 1
+
 page-01
 
 Success:
