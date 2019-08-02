@@ -23,23 +23,24 @@ public class WebCrawler {
 	static Logger logger = Logger.getLogger(WebCrawler.class.getName());
 
 	public static void main(String[] args) {
+		
 		WebCrawler webCrawler = new WebCrawler();
 		BasicConfigurator.configure();
 		Scanner sc = new Scanner(System.in);
-		int testCase = sc.nextInt();
+		int testCases = sc.nextInt();
 
-		JSONArray pagesList = getInputData();
+		JSONArray pageList = getInputFileData();
 
-		for (int i = 0; i < testCase; i++) {
+		for (int i = 0; i < testCases; i++) {
+
 			String startPage = sc.next();
-
-			webCrawler.init(startPage, pagesList);
+			webCrawler.init(startPage, pageList);
 		}
 		sc.close();
 
 	}
 
-	private void init(String startPage, JSONArray pagesList) {
+	private void init(String startPage, JSONArray pageList) {
 
 		try {
 
@@ -52,14 +53,14 @@ public class WebCrawler {
 
 				@Override
 				public void run() {
-					checkPageStatus(pagesList, startPage);
+					validateData(pageList, startPage);
 					System.out.println("Success:\n" + success);
 					System.out.println("\nSkipped:\n" + skipped);
 					System.out.println("\nError:\n" + error);
 
 				}
 			});
-			t.start(); 
+			t.start();
 
 		} catch (
 
@@ -70,7 +71,7 @@ public class WebCrawler {
 
 	}
 
-	private static JSONArray getInputData() {
+	private static JSONArray getInputFileData() {
 		try {
 			JSONParser jsonParser = new JSONParser();
 			FileReader reader = new FileReader("src\\com\\webcrawler\\data\\internet.json");
@@ -78,43 +79,42 @@ public class WebCrawler {
 			return (JSONArray) internetJsonObj.get("pages");
 		} catch (FileNotFoundException e) {
 
-			logger.error("FileNotFoundException occured:: " + e);
+			logger.error("File is not present...");
 
 		} catch (IOException e) {
 
-			logger.error("IOException occured:: " + e);
+			logger.error("Error while reading file...");
 		} catch (ParseException e) {
 
-			logger.error("ParseException occured:: " + e);
+			logger.error("Error occured while parsing file...");
 		}
 		return null;
 	}
 
-	private void checkPageStatus(JSONArray pageList, String page) {
+	private void validateData(JSONArray pageList, String page) {
 		try {
 
 			if (success.contains(page)) {
 				skipped.add(page);
 			} else {
-				JSONArray linkedPages = checkPages(pageList, page);
+				JSONArray linkedPages = visitPages(pageList, page);
 				if (linkedPages != null && linkedPages.size() > 0) {
 
 					success.add(page);
 					linkedPages.forEach(items -> {
-
 						try {
 							Thread t = new Thread(new Runnable() {
 
 								@Override
 								public void run() {
-									checkPageStatus(pageList, items.toString());
+									validateData(pageList, items.toString());
 								}
 							});
 							t.start();
 							t.join();
 						} catch (Exception e) {
 							logger.error("Exception occured:: " + e);
-							
+
 						}
 					});
 
@@ -127,7 +127,7 @@ public class WebCrawler {
 		}
 	}
 
-	private static JSONArray checkPages(JSONArray pageList, String startPage) {
+	private static JSONArray visitPages(JSONArray pageList, String startPage) {
 		try {
 			Optional<?> result = pageList.stream()
 					.filter(pages -> ((JSONObject) pages).get("address").equals(startPage)).findFirst();
